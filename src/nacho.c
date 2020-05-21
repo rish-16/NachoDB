@@ -80,7 +80,7 @@ void deserialise_row(void * source, Row * destination) {
 	memcpy(&(destination->email), source + EMAIL_OFFSET, EMAIL_SIZE);	
 }
 
-void free_table(Table * table) {
+void dump_table(Table * table) {
 	for (int i = 0; table->pages[i]; i++) {
 		free(table->pages[i]);
 	}
@@ -118,7 +118,7 @@ QueryBuffer * new_query_buffer() {
 MetaCommandResult do_meta_command(QueryBuffer * query_buffer, Table * table) {
 	if (strcmp(query_buffer->buffer, ".exit") == 0) { // user wants to exit
 		close_query_buffer(query_buffer);
-		free_table(table);
+		dump_table(table);
 		exit(EXIT_SUCCESS);
 	} else {
 		return META_UNRECOGNISED_COMMAND;
