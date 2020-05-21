@@ -10,7 +10,9 @@ To practice C after a 8 year hiatus, I'm building small projects in the language
 <br />
 Here's the NachoDB prompt:
 
-<pre><code><strong>nacho</strong></code> > </pre>
+```
+nacho > 
+```
 
 Here are some useful commands:
 
