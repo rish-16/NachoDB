@@ -16,10 +16,10 @@ nacho >
 
 NachoDB has a single table with a fixed schema:
 
-| ID | Name       | Email            |
-|----|------------|------------------|
-| 0  | John Doe   | jdoe@gmail.com   |
-| 1  | Dave Smith | dsmith@gmail.com |
+| ID | Name   | Email            |
+|----|--------|------------------|
+| 0  | John   | jdoe@gmail.com   |
+| 1  | Dave   | dsmith@gmail.com |
 
 <br />
 
