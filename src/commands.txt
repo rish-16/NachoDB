@@ -1,0 +1,6 @@
+insert 0 John jdoe@gmail.com
+insert 1 Jerry jwang@google.com
+insert 2 David deast@facebook.out
+insert 3 Elisabeth elisa1234@outlook.com
+select
+.exit
