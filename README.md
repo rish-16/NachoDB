@@ -27,8 +27,18 @@ Here are some useful commands:
 
 1. `insert`
 2. `select`
-3. `delete`
-4. `.exit`
+3. `.exit`
+
+<br />
+
+To see the bytes being stored on the disk, go to the `src` directory and type the following in terminal:
+
+```bash
+vim rishtest.nacho
+:%!xxd
+```
+
+This allows us to see the individual bytes and the corresponding data.
 
 ---
 
