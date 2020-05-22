@@ -22,11 +22,11 @@ NachoDB has a single table with a fixed schema:
 
 The records look like this:
 
-| ID | Name   | Email            |
-|----|--------|------------------|
-| 0  | John   | jdoe@gmail.com   |
-| 1  | Dave   | dsmith@gmail.com |
-| 2  | Jerry  | jwang@gmail.com  |
+| id | username  | email            |
+|----|-----------|------------------|
+| 0  | John      | jdoe@gmail.com   |
+| 1  | Dave      | dsmith@gmail.com |
+| 2  | Jerry     | jwang@gmail.com  |
 
 <br />
 
