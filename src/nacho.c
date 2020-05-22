@@ -10,8 +10,8 @@
 
 typedef struct {
 	uint32_t id;
-	char name[COLUMN_NAME_SIZE];
-	char email[COLUMN_EMAIL_SIZE];
+	char name[COLUMN_NAME_SIZE + 1];
+	char email[COLUMN_EMAIL_SIZE + 1];
 } Row;
 
 // takes in user queries
@@ -33,7 +33,9 @@ typedef enum {
 
 typedef enum {
 	PREPARE_SUCCESS,
+	PREPARE_NEGATIVE_ID,
 	PREPARE_SYNTAX_ERROR,
+	PREPARE_STRING_TOO_LONG,
 	PREPARE_UNRECOGNISED_STATEMENT
 } PrepareResult;
 
@@ -124,20 +126,44 @@ MetaCommandResult do_meta_command(QueryBuffer * query_buffer, Table * table) {
 	}
 }
 
+PrepareResult prepare_insert(QueryBuffer * query_buffer, Statement * statement) {
+	statement->type = STATEMENT_INSERT;
+	
+	// breaking query into tokens
+	char * keyword = strtok(query_buffer->buffer, " ");
+	char * id_string = strtok(NULL, " ");
+	char * name = strtok(NULL, " ");
+	char * email = strtok(NULL, " ");
+	
+	if (id_string == NULL || name == NULL || email == NULL) {
+		return PREPARE_SYNTAX_ERROR;
+	}
+	
+	// casting string to integer
+	int id = atoi(id_string);
+	
+	if (id < 0) {
+		return PREPARE_NEGATIVE_ID;
+	}
+	
+	if (strlen(name) > COLUMN_NAME_SIZE) {
+		return PREPARE_STRING_TOO_LONG;
+	}
+	
+	if (strlen(email) > COLUMN_EMAIL_SIZE) {
+		return PREPARE_STRING_TOO_LONG;
+	}
+	
+	statement->row_to_insert.id = id;
+	strcpy(statement->row_to_insert.name, name);
+	strcpy(statement->row_to_insert.email, email);
+	
+	return PREPARE_SUCCESS;
+}
+
 PrepareResult prepare_statement(QueryBuffer * query_buffer, Statement * statement) {
 	if (strncmp(query_buffer->buffer, "insert", 6) == 0) {
-		statement->type = STATEMENT_INSERT;
-		int args_assigned = sscanf(
-			query_buffer->buffer, "insert %d %s %s", &(statement->row_to_insert.id),
-			statement->row_to_insert.name,
-			statement->row_to_insert.email
-		);
-		
-		if (args_assigned < 3) {
-			return PREPARE_SYNTAX_ERROR;
-		}
-		
-		return PREPARE_SUCCESS;
+		return prepare_insert(query_buffer, statement);
 	}
 	
 	if (strcmp(query_buffer->buffer, "select") == 0) {
@@ -163,11 +189,14 @@ Executable execute_insert(Statement * statement, Table * table) {
 
 Executable execute_select(Statement * statement, Table * table) {
 	Row row;
+	int count = 0;
 	
 	for (uint32_t i = 0; i < table->n_rows; i++) {
 		deserialise_row(alloc_row(table, i), &row);
 		print_row(&row);
+		count++;
 	}
+	printf ("\n\nFound %d records\n", count);
 	return EXECUTE_SUCCESS;
 }
 
@@ -228,8 +257,14 @@ int main(int argc, char * argv[]) {
 		switch (prepare_statement(query_buffer, &statement)) {
 			case (PREPARE_SUCCESS):
 				break;
+			case (PREPARE_NEGATIVE_ID):
+				printf ("ID must be positive.\n");
+				continue;
 			case (PREPARE_SYNTAX_ERROR):
 				printf("Syntax error. Could not parse statement.\n");
+				continue;
+			case (PREPARE_STRING_TOO_LONG):
+				printf ("String is too long.\n");
 				continue;
 			case (PREPARE_UNRECOGNISED_STATEMENT):
 				printf ("Unrecognised keyword at the start of '%s'\n", query_buffer->buffer);
