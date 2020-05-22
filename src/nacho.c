@@ -5,10 +5,8 @@
 
 #define COLUMN_NAME_SIZE 32
 #define COLUMN_EMAIL_SIZE 255
-#define size_of_attribute(Struct, Attribute) sizeof(((Struct*)0)->Attribute)
+#define size_of_attribute(Struct, Attribute) sizeof(((Struct*)0)->Attribute) // number of bytes per attribute
 #define TABLE_MAX_PAGES 100
-#define COLUMN_USERNAME_SIZE 32
-#define COLUMN_EMAIL_SIZE 255
 
 typedef struct {
 	uint32_t id;
@@ -16,6 +14,7 @@ typedef struct {
 	char email[COLUMN_EMAIL_SIZE];
 } Row;
 
+// takes in user queries
 typedef struct {
 	char * buffer;
 	size_t buffer_length;
@@ -25,7 +24,7 @@ typedef struct {
 typedef enum { 
 	EXECUTE_SUCCESS, 
 	EXECUTE_TABLE_FULL 
-} ExecuteResult;
+} Executable;
 
 typedef enum {
 	META_COMMAND_SUCCESS,
@@ -49,7 +48,7 @@ typedef struct {
 } Statement;
 
 typedef struct {
-	uint32_t num_rows;
+	uint32_t n_rows;
 	void * pages[TABLE_MAX_PAGES];
 } Table;
 
@@ -92,7 +91,7 @@ void close_query_buffer(QueryBuffer * query_buffer) {
 	free(query_buffer);
 }
 
-void * slot_row(Table * table, uint32_t row_num) {
+void * alloc_row(Table * table, uint32_t row_num) {
 	uint32_t page_num = row_num / ROWS_PER_PAGE;
 	void * page = table->pages[page_num];
 	
@@ -149,30 +148,30 @@ PrepareResult prepare_statement(QueryBuffer * query_buffer, Statement * statemen
 	return PREPARE_UNRECOGNISED_STATEMENT;
 }
 
-ExecuteResult execute_insert(Statement * statement, Table * table) {
-	if (table->num_rows >= TABLE_MAX_ROWS) {
+Executable execute_insert(Statement * statement, Table * table) {
+	if (table->n_rows >= TABLE_MAX_ROWS) {
 		return EXECUTE_TABLE_FULL;
 	}
 	
 	Row * row = &(statement->row_to_insert);
 	
-	serialise_row(row, slot_row(table, table->num_rows));
-	table->num_rows += 1;
+	serialise_row(row, alloc_row(table, table->n_rows));
+	table->n_rows += 1;
 	
 	return EXECUTE_SUCCESS;
 }
 
-ExecuteResult execute_select(Statement * statement, Table * table) {
+Executable execute_select(Statement * statement, Table * table) {
 	Row row;
 	
-	for (uint32_t i = 0; i < table->num_rows; i++) {
-		deserialise_row(slot_row(table, i), &row);
+	for (uint32_t i = 0; i < table->n_rows; i++) {
+		deserialise_row(alloc_row(table, i), &row);
 		print_row(&row);
 	}
 	return EXECUTE_SUCCESS;
 }
 
-ExecuteResult execute_statement(Statement * statement, Table * table) {
+Executable execute_statement(Statement * statement, Table * table) {
 	switch (statement->type) {
 		case (STATEMENT_INSERT):
 			return execute_insert(statement, table);
@@ -183,7 +182,7 @@ ExecuteResult execute_statement(Statement * statement, Table * table) {
 
 Table * new_table() {
 	Table * table = malloc(sizeof(Table));
-	table->num_rows = 0;
+	table->n_rows = 0;
 	
 	for (uint32_t i = 0; i < TABLE_MAX_PAGES; i++) {
 		table->pages[i] = NULL;
