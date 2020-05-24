@@ -63,6 +63,12 @@ typedef struct {
 	uint32_t n_rows;
 } Table;
 
+typedef struct {
+	Table * table;
+	uint32_t row_num;
+	bool end_of_table;
+} Cursor;
+
 const uint32_t PAGE_SIZE = 4096;
 const uint32_t ID_SIZE = size_of_attribute(Row, id);
 const uint32_t USERNAME_SIZE = size_of_attribute(Row, username);
@@ -125,14 +131,23 @@ void * get_page(PageCache * page_cache, uint32_t page_num) {
 	return page_cache->pages[page_num];
 }
 
-void * alloc_row(Table * table, uint32_t row_num) {
+void * cursor_value(Cursor * cursor) {
+	uint32_t row_num = cursor->row_num;
 	uint32_t page_num = row_num / ROWS_PER_PAGE;
 	
-	void * page = get_page(table->page_cache, page_num);
+	void * page = get_page(cursor->table->page_cache, page_num);
 	uint32_t row_offset = row_num % ROWS_PER_PAGE;
 	uint32_t byte_offset = row_offset * ROW_SIZE;
 	
 	return page + byte_offset;
+}
+
+void * advance_cursor(Cursor * cursor) {
+	cursor->row_num += 1;
+	
+	if (cursor->row_num >= cursor->table->n_rows) {
+		cursor->end_of_table = true;
+	}
 }
 
 void flush_cache(PageCache * page_cache, uint32_t page_num, uint32_t size) {
@@ -272,22 +287,30 @@ Executable execute_insert(Statement * statement, Table * table) {
 	}
 	
 	Row * row = &(statement->row_to_insert);
+	Cursor * cursor = end_table(table);
 	
-	serialise_row(row, alloc_row(table, table->n_rows));
+	serialise_row(row, cursor_value(cursor));
 	table->n_rows += 1;
+	
+	free(cursor);
 	
 	return EXECUTE_SUCCESS;
 }
 
 Executable execute_select(Statement * statement, Table * table) {
+	Cursor * cursor = table_start(table);
 	Row row;
 	int count = 0;
 	
-	for (uint32_t i = 0; i < table->n_rows; i++) {
-		deserialise_row(alloc_row(table, i), &row);
+	while (!(cursor->end_of_table)) {
+		deserialise_row(cursor_value(cursor), &row);
 		print_row(&row);
+		advance_cursor(cursor);
 		count++;
 	}
+	
+	free(cursor);
+	
 	printf ("\n\nFound %d records\n", count);
 	return EXECUTE_SUCCESS;
 }
@@ -333,6 +356,24 @@ Table * open_db(const char * filename) {
 	table->n_rows = n_rows;
 	
 	return table;
+}
+
+Cursor * start_table(Table * table) {
+	Cursor * cursor = malloc(sizeof(Cursor));
+	cursor->table = table;
+	cursor->row_num = 0;
+	cursor->end_of_table = (table->n_rows == 0);
+	
+	return cursor;
+}
+
+Cursor * end_table(Table * table) {
+	Cursor * cursor = malloc(sizeof(Cursor));
+	cursor->table = table;
+	cursor->row_num = table->n_rows;
+	cursor->end_of_table = true;
+	
+	return cursor;
 }
 
 void prompt() {
