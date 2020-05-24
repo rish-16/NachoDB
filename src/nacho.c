@@ -18,8 +18,8 @@ typedef struct {
 } Row;
 
 typedef enum {
-	NODE_INTERNAL;
-	NODE_LEAF;
+	NODE_INTERNAL,
+	NODE_LEAF
 } NodeType;
 
 // takes in user queries
