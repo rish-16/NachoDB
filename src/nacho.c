@@ -17,6 +17,11 @@ typedef struct {
 	char email[COLUMN_EMAIL_SIZE + 1];
 } Row;
 
+typedef enum {
+	NODE_INTERNAL;
+	NODE_LEAF;
+} NodeType;
+
 // takes in user queries
 typedef struct {
 	char * buffer;
